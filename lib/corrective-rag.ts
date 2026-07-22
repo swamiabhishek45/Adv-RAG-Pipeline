@@ -114,11 +114,13 @@ export async function runCorrectiveRag(question: string, variants: QueryVariant[
     logs
   });
 
-  await saveRagTrace({
+  saveRagTrace({
     question,
     traces: result.traces,
     logs: result.logs,
     createdAt: new Date()
+  }).catch((error) => {
+    console.error("Error saving RAG trace:", error);
   });
 
   return {

@@ -20,48 +20,48 @@ export async function buildQueryVariants(rawQuery: string, logs: StageLog[]) {
   const model = smallModel();
   const variants: QueryVariant[] = [{ kind: "original", text: query }];
 
-  const stepBack = await timed(logs, "step_back", () =>
-    structuredCall({
-      model,
-      schema: StepBackSchema,
-      name: "step_back_query",
-      system: "Create a broader conceptual version of a course-search question.",
-      user: query
-    })
-  );
+  const [stepBack, rewrite, subQuestions, hyde] = await Promise.all([
+    timed(logs, "step_back", () =>
+      structuredCall({
+        model,
+        schema: StepBackSchema,
+        name: "step_back_query",
+        system: "Create a broader conceptual version of a course-search question.",
+        user: query
+      })
+    ),
+    timed(logs, "rewrite", () =>
+      structuredCall({
+        model,
+        schema: RewriteSchema,
+        name: "rewrite_query",
+        system: "Fix grammar and spelling only. Preserve the user's meaning exactly.",
+        user: query
+      })
+    ),
+    timed(logs, "sub_questions", () =>
+      structuredCall({
+        model,
+        schema: SubQuestionsSchema,
+        name: "sub_questions",
+        system: "Split the course-search question into 2 to 4 focused sub-questions.",
+        user: query
+      })
+    ),
+    timed(logs, "hyde", () =>
+      structuredCall({
+        model,
+        schema: HydeSchema,
+        name: "hyde_answer",
+        system: "Write a concise hypothetical answer that might appear in course subtitles.",
+        user: query
+      })
+    )
+  ]);
+
   variants.push({ kind: "step_back", text: stepBack.question });
-
-  const rewrite = await timed(logs, "rewrite", () =>
-    structuredCall({
-      model,
-      schema: RewriteSchema,
-      name: "rewrite_query",
-      system: "Fix grammar and spelling only. Preserve the user's meaning exactly.",
-      user: query
-    })
-  );
   variants.push({ kind: "rewrite", text: rewrite.query });
-
-  const subQuestions = await timed(logs, "sub_questions", () =>
-    structuredCall({
-      model,
-      schema: SubQuestionsSchema,
-      name: "sub_questions",
-      system: "Split the course-search question into 2 to 4 focused sub-questions.",
-      user: query
-    })
-  );
   variants.push(...subQuestions.questions.map((text) => ({ kind: "sub_question" as const, text })));
-
-  const hyde = await timed(logs, "hyde", () =>
-    structuredCall({
-      model,
-      schema: HydeSchema,
-      name: "hyde_answer",
-      system: "Write a concise hypothetical answer that might appear in course subtitles.",
-      user: query
-    })
-  );
   variants.push({ kind: "hyde", text: hyde.hypothetical_answer });
 
   return { guard, variants: dedupeVariants(variants) };

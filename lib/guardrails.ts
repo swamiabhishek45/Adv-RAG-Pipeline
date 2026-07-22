@@ -1,5 +1,4 @@
-import { GuardrailResult } from "@/lib/schemas";
-import { Citation } from "@/lib/schemas";
+import { GuardrailResult, Citation } from "@/lib/schemas";
 
 const profanity = /\b(fuck|shit|bitch|asshole|bastard)\b/i;
 const jailbreak = /\b(ignore previous|developer mode|system prompt|jailbreak|bypass instructions)\b/i;
@@ -8,7 +7,7 @@ const phone = /\b(?:\+?\d[\s.-]?){10,}\b/;
 const competitors = /\b(coursera|pluralsight|linkedin learning|edx|skillshare)\b/i;
 
 export function inputGuardrails(query: string): GuardrailResult {
-  const trimmed = query.trim();
+  const trimmed = query.trim(); 
   if (!trimmed) return { allowed: false, reason: "Question is empty." };
   if (jailbreak.test(trimmed)) return { allowed: false, reason: "Jailbreak attempt detected." };
   if (profanity.test(trimmed)) return { allowed: false, reason: "Profanity is not allowed." };

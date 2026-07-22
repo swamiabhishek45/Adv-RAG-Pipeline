@@ -49,17 +49,30 @@ export async function vectorAdapter(variant: QueryVariant): Promise<RetrievedDoc
 }
 
 export async function retrieveForVariants(variants: QueryVariant[], logs: StageLog[]) {
+  const results = await Promise.all(
+    variants.map(async (variant) => {
+      const decision = await timed(logs, `route:${variant.kind}`, () => routeVariant(variant));
+      const subPromises: Promise<RetrievedDocument[]>[] = [];
+
+      if (decision.route === "sql" || decision.route === "both") {
+        subPromises.push(timed(logs, `sql:${variant.kind}`, () => sqlAdapter(variant)));
+      }
+      if (decision.route === "vector" || decision.route === "both") {
+        subPromises.push(timed(logs, `vector:${variant.kind}`, () => vectorAdapter(variant)));
+      }
+
+      const docsLists = await Promise.all(subPromises);
+      return { decision, docsLists };
+    })
+  );
+
   const lists: RetrievedDocument[][] = [];
   const routing = [];
 
-  for (const variant of variants) {
-    const decision = await timed(logs, `route:${variant.kind}`, () => routeVariant(variant));
-    routing.push(decision);
-    if (decision.route === "sql" || decision.route === "both") {
-      lists.push(await timed(logs, `sql:${variant.kind}`, () => sqlAdapter(variant)));
-    }
-    if (decision.route === "vector" || decision.route === "both") {
-      lists.push(await timed(logs, `vector:${variant.kind}`, () => vectorAdapter(variant)));
+  for (const res of results) {
+    routing.push(res.decision);
+    for (const list of res.docsLists) {
+      lists.push(list);
     }
   }
 
