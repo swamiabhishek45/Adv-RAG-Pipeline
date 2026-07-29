@@ -8,7 +8,7 @@ import { QueryVariant, StageLog } from "@/lib/types";
 import { smallModel, structuredCall } from "@/lib/llm";
 import { inputGuardrails } from "@/lib/guardrails";
 
-export async function buildQueryVariants(rawQuery: string, logs: StageLog[]) {
+export async function buildQueryVariants(rawQuery: string, logs: StageLog[], memories: string[] = []) {
   const guardStarted = Date.now();
   const guard = inputGuardrails(rawQuery);
   logs.push({ stage: "input_guardrails", latencyMs: Date.now() - guardStarted });
@@ -20,6 +20,9 @@ export async function buildQueryVariants(rawQuery: string, logs: StageLog[]) {
   const model = smallModel();
   const variants: QueryVariant[] = [{ kind: "original", text: query }];
 
+  const contextStr = memories.length > 0 ? `[User Context/Preferences: ${memories.join(", ")}]\n` : "";
+  const queryWithContext = contextStr ? `${contextStr}Question: ${query}` : query;
+
   const [stepBack, rewrite, subQuestions, hyde] = await Promise.all([
     timed(logs, "step_back", () =>
       structuredCall({
@@ -27,7 +30,7 @@ export async function buildQueryVariants(rawQuery: string, logs: StageLog[]) {
         schema: StepBackSchema,
         name: "step_back_query",
         system: "Create a broader conceptual version of a course-search question.",
-        user: query
+        user: queryWithContext
       })
     ),
     timed(logs, "rewrite", () =>
@@ -36,7 +39,7 @@ export async function buildQueryVariants(rawQuery: string, logs: StageLog[]) {
         schema: RewriteSchema,
         name: "rewrite_query",
         system: "Fix grammar and spelling only. Preserve the user's meaning exactly.",
-        user: query
+        user: queryWithContext
       })
     ),
     timed(logs, "sub_questions", () =>
@@ -45,7 +48,7 @@ export async function buildQueryVariants(rawQuery: string, logs: StageLog[]) {
         schema: SubQuestionsSchema,
         name: "sub_questions",
         system: "Split the course-search question into 2 to 4 focused sub-questions.",
-        user: query
+        user: queryWithContext
       })
     ),
     timed(logs, "hyde", () =>
@@ -54,7 +57,7 @@ export async function buildQueryVariants(rawQuery: string, logs: StageLog[]) {
         schema: HydeSchema,
         name: "hyde_answer",
         system: "Write a concise hypothetical answer that might appear in course subtitles.",
-        user: query
+        user: queryWithContext
       })
     )
   ]);

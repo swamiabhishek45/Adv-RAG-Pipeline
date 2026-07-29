@@ -34,11 +34,11 @@ const RagState = Annotation.Root({
   })
 });
 
-export async function runCorrectiveRag(question: string, variants: QueryVariant[], documents: RetrievedDocument[], logs: StageLog[]) {
+export async function runCorrectiveRag(question: string, variants: QueryVariant[], documents: RetrievedDocument[], logs: StageLog[], memories: string[] = []) {
   const graph = new StateGraph(RagState)
     .addNode("generate", async (state) => {
       const started = Date.now();
-      const answer = await generateAnswer(state.question, state.documents);
+      const answer = await generateAnswer(state.question, state.documents, memories);
       return {
         answer: answer.answer,
         citations: answer.citations,

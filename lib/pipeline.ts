@@ -7,6 +7,7 @@ import { buildQueryVariants } from "@/lib/query-translation";
 import { retrieveForVariants } from "@/lib/retrieval";
 import { runCorrectiveRag } from "@/lib/corrective-rag";
 import { StageLog } from "@/lib/types";
+import { getUserMemories, addUserMemory } from "@/lib/memory";
 
 export async function answerBaseline(question: string) {
   const logs: StageLog[] = [];
@@ -17,9 +18,11 @@ export async function answerBaseline(question: string) {
   return { ...answer, logs };
 }
 
-export async function answerAdvanced(question: string) {
+export async function answerAdvanced(question: string, userId?: string) {
   const logs: StageLog[] = [];
-  const translated = await buildQueryVariants(question, logs);
+  const memories = userId ? await getUserMemories(userId, question) : [];
+  
+  const translated = await buildQueryVariants(question, logs, memories);
   if (!translated.guard.allowed) {
     return {
       answer: translated.guard.reason ?? "This question cannot be processed.",
@@ -33,7 +36,8 @@ export async function answerAdvanced(question: string) {
     translated.guard.sanitized_query ?? question,
     translated.variants,
     documents,
-    logs
+    logs,
+    memories
   );
   const guarded = outputPayloadGuardrails(result.answer, result.citations);
   const response = AnswerSchema.parse({
@@ -46,5 +50,12 @@ export async function answerAdvanced(question: string) {
       stages: result.logs ?? logs
     })
   );
+
+  if (userId && response.answer) {
+    addUserMemory(userId, `User asked: ${question}\nAssistant answered: ${response.answer}`).catch((error) => {
+      console.error("Error saving interaction to Mem0:", error);
+    });
+  }
+
   return response;
 }

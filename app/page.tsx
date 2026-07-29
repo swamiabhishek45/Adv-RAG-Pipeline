@@ -23,6 +23,17 @@ export default function Home() {
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<AskResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [userId] = useState(() => {
+    if (typeof window !== "undefined") {
+      let id = localStorage.getItem("assistant_user_id");
+      if (!id) {
+        id = "user_" + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("assistant_user_id", id);
+      }
+      return id;
+    }
+    return "user_default";
+  });
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,7 +45,7 @@ export default function Home() {
       const response = await fetch("/api/ask", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({ question, userId })
       });
       const data = (await response.json()) as AskResponse;
       setResult(response.ok ? data : { answer: data.error ?? "Request failed.", citations: [] });

@@ -2,7 +2,7 @@ import { AnswerSchema } from "@/lib/schemas";
 import { mainModel, structuredCall } from "@/lib/llm";
 import { RetrievedDocument } from "@/lib/types";
 
-export async function generateAnswer(question: string, documents: RetrievedDocument[]) {
+export async function generateAnswer(question: string, documents: RetrievedDocument[], memories: string[] = []) {
   return structuredCall({
     model: mainModel(),
     schema: AnswerSchema,
@@ -25,8 +25,12 @@ export async function generateAnswer(question: string, documents: RetrievedDocum
       "   - timestamp: The formatted range '<Start MM:SS> -> <End MM:SS>' (e.g., '01:14 -> 01:50').",
       "",
       "Here is an example of the expected 'answer' field structure inside the JSON:",
-      "\"Expo Router works as a file-based routing system, where files and folders inside the app directory automatically become routes in the app. Instead of manually defining navigation stacks (as in React Navigation), Expo Router creates routes based on the structure.\\n\\n(Source 1, Module 4 - Introduction to Expo Router_epm, Timestamp: 01:14 -> 01:50) (Source 2, Module 4 - File-Based Routing Basics_epm, Timestamp: 00:00 -> 00:33)\""
-    ].join("\n"),
+      "\"Expo Router works as a file-based routing system, where files and folders inside the app directory automatically become routes in the app. Instead of manually defining navigation stacks (as in React Navigation), Expo Router creates routes based on the structure.\\n\\n(Source 1, Module 4 - Introduction to Expo Router_epm, Timestamp: 01:14 -> 01:50) (Source 2, Module 4 - File-Based Routing Basics_epm, Timestamp: 00:00 -> 00:33)\"",
+      "",
+      memories.length > 0
+        ? `Additionally, tailor your explanation to the user's specific context and preferences if relevant:\n${memories.map((m) => `- ${m}`).join("\n")}`
+        : ""
+    ].filter(Boolean).join("\n"),
     user: `Question: ${question}\n\nChunks:\n${documents.map(formatDoc).join("\n\n")}`
   });
 }

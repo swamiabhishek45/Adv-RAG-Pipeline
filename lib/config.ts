@@ -12,7 +12,8 @@ export const config = {
       : path.join(process.cwd(), "..", "class-subtitle", "class-subtitle")),
   mainModel: process.env.OPENAI_MAIN_MODEL ?? "gpt-4o",
   smallModel: process.env.OPENAI_SMALL_MODEL ?? "gpt-4o-mini",
-  embeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small"
+  embeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
+  mem0ApiKey: process.env.MEM0_API_KEY
 };
 
 export function requireEnv(name: keyof typeof config): string {
