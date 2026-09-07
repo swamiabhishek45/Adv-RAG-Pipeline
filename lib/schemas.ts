@@ -31,18 +31,20 @@ export const HydeSchema = z.object({ hypothetical_answer: z.string().min(1) });
 
 export const RoutingDecisionSchema = z.object({
   query: z.string().min(1),
-  route: z.enum(["sql", "vector", "both"]),
+  route: z.enum(["keyword", "vector", "both"]),
   reason: z.string().min(1)
 });
 
 export type RoutingDecision = z.infer<typeof RoutingDecisionSchema>;
 
-export const SqlQuerySchema = z.object({
-  sql: z.string().min(1),
+export const KeywordQuerySchema = z.object({
+  searchTerm: z.string().min(1),
+  moduleFilter: z.string().optional(),
+  lessonFilter: z.string().optional(),
   reason: z.string().min(1)
 });
 
-export type SqlQuery = z.infer<typeof SqlQuerySchema>;
+export type KeywordQuery = z.infer<typeof KeywordQuerySchema>;
 
 export const ScoreSchema = z.object({
   score: z.number().min(0).max(10),

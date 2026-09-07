@@ -3,8 +3,9 @@ import path from "node:path";
 export const config = {
   openAiApiKey: process.env.OPENAI_API_KEY,
   geminiApiKey: process.env.GEMINI_API_KEY,
-  databaseUrl: process.env.DATABASE_URL,
-  mongodbUri: process.env.MONGODB_URI,
+  qdrantUrl: process.env.QDRANT_URL ?? "http://localhost:6333",
+  qdrantApiKey: process.env.QDRANT_API_KEY,
+  redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
   subtitleRoot:
     process.env.SUBTITLE_ROOT ??
     (process.env.NODE_ENV === "production"

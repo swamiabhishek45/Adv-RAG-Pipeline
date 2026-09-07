@@ -1,8 +1,8 @@
 import "dotenv/config";
 import { config } from "@/lib/config";
-import { ensureSchema, getPgPool, insertChunks, resetCourseTables, upsertLesson } from "@/lib/db";
+import { ensureSchema, insertChunks, resetCourseTables, upsertLesson } from "@/lib/db";
 import { embeddingsModel } from "@/lib/llm";
-import { closeMongoClient, saveRawSubtitleDocument } from "@/lib/mongo";
+import { closeQueue, saveRawSubtitleDocument } from "@/lib/queue";
 import { chunkCues, findLessonSubtitleFiles, parseSubtitleFile } from "@/lib/subtitles";
 import { SubtitleChunk } from "@/lib/types";
 
@@ -33,13 +33,13 @@ async function main() {
           subtitleRoot: root,
           schemaOnly,
           reset: shouldReset,
-          message: "Postgres schema is ready."
+          message: "Qdrant collection is ready."
         },
         null,
         2
       )
     );
-    await getPgPool().end().catch(() => undefined);
+    await closeQueue().catch(() => undefined);
     return;
   }
 
@@ -123,8 +123,7 @@ async function main() {
   );
 
   if (!dryRun) {
-    await getPgPool().end().catch(() => undefined);
-    await closeMongoClient().catch(() => undefined);
+    await closeQueue().catch(() => undefined);
   }
 }
 

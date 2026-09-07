@@ -4,7 +4,7 @@ import { generateAnswer } from "@/lib/generation";
 import { smallModel, structuredCall } from "@/lib/llm";
 import { retrieveForVariants } from "@/lib/retrieval";
 import { QueryVariant, RetrievedDocument, StageLog } from "@/lib/types";
-import { saveRagTrace } from "@/lib/mongo";
+import { saveRagTrace } from "@/lib/queue";
 
 type IterationTrace = {
   iteration: number;
